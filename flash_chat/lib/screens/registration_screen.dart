@@ -1,0 +1,119 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+
+import '../components/rounded_button.dart';
+import '../constants.dart';
+import 'chat_screen.dart';
+
+class RegistrationScreen extends StatefulWidget {
+  static const String id = 'registration_screen';
+
+  const RegistrationScreen({super.key});
+
+  @override
+  State<RegistrationScreen> createState() => _RegistrationScreenState();
+}
+
+class _RegistrationScreenState extends State<RegistrationScreen> {
+  final _auth = FirebaseAuth.instance;
+
+  String email = '';
+  String password = '';
+  bool showSpinner = false;
+  String? errorMessage;
+
+  Future<void> register() async {
+    setState(() {
+      showSpinner = true;
+      errorMessage = null;
+    });
+
+    try {
+      // Same as logging in, but this CREATES the account.
+      await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      if (!mounted) return;
+      Navigator.pushNamed(context, ChatScreen.id);
+    } on FirebaseAuthException catch (e) {
+      setState(() {
+        errorMessage = e.message; // e.g. "password too weak"
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          showSpinner = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Hero(
+                  tag: 'logo',
+                  child: SizedBox(
+                    height: 200.0,
+                    child: FlutterLogo(size: 200.0),
+                  ),
+                ),
+                const SizedBox(height: 48.0),
+                TextField(
+                  keyboardType: TextInputType.emailAddress,
+                  textAlign: TextAlign.center,
+                  onChanged: (value) {
+                    email = value;
+                  },
+                  decoration: kTextFieldDecoration.copyWith(
+                    hintText: 'Enter your email',
+                  ),
+                ),
+                const SizedBox(height: 8.0),
+                TextField(
+                  obscureText: true,
+                  textAlign: TextAlign.center,
+                  onChanged: (value) {
+                    password = value;
+                  },
+                  decoration: kTextFieldDecoration.copyWith(
+                    hintText: 'Enter your password',
+                  ),
+                ),
+                if (errorMessage != null) ...[
+                  const SizedBox(height: 12.0),
+                  Text(
+                    errorMessage!,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                ],
+                const SizedBox(height: 24.0),
+                RoundedButton(
+                  title: 'Register',
+                  colour: Colors.blueAccent,
+                  onPressed: register,
+                ),
+              ],
+            ),
+          ),
+          if (showSpinner)
+            Container(
+              color: Colors.black26,
+              child: const Center(child: CircularProgressIndicator()),
+            ),
+        ],
+      ),
+    );
+  }
+}
